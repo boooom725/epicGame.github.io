@@ -1,0 +1,448 @@
+<html>
+	<head>
+		<title>Epic web pagina</title>
+	</head>
+
+	<body>
+
+			<div id="form">
+				<input id="naam" type="text" placeholder="Gebruikersnaam"></input>
+				<br>
+				<button onclick="Show()">Start</button>
+
+
+			</div>
+
+			<div id="canvHolder" style="display:none">
+				<canvas id="canv" width="800" height="600" style="border:1px solid black"></canvas>
+			</div>
+
+
+			<div hidden>
+				<img id="Background" src="https://www.mariomayhem.com/fun/smb_level_editor/images/overworld_bg.png"></img>
+				<img id="mario" src="https://www.mariomayhem.com/fun/smb_level_editor/images/mario/Mario.gif"></img>
+				<img id="enemy" src="https://bang-phinf.pstatic.net/a/324d04/a_hcfUd018bng1i48kuiglxy5z_xwsd21.jpg?type=w660"></img>
+				<img id="toad" src="https://i.pinimg.com/originals/37/e6/2c/37e62c340622416b614459600ecb1d9c.jpg"></img>
+				<img id="boss" src="https://media.discordapp.net/attachments/719619649083539490/767808781232504842/peter_griffin_by_meowistick_dd2cwn0-fullview.png"></img>
+			</div>
+
+
+			<div id="dood" style="display:none">
+					<img src="https://cdn.discordapp.com/attachments/642758589424992262/758764383806685315/119261363_4476171845787272_3482507337981332054_n.jpg"></img>
+
+			</div>
+
+	</body>
+
+
+</html>
+
+<script>
+
+
+	function dead(){
+		var x = document.getElementById("canvHolder");
+		var y = document.getElementById("form");
+		var z = document.getElementById("dood");
+
+
+		x.style.display = "none";
+		y.style.display = "none";
+		z.style.display = "block";
+	}
+	// sprites
+	var bg = document.getElementById("Background");
+	var mr = document.getElementById("mario");
+	var en = document.getElementById("enemy");
+	var td = document.getElementById("toad");
+	var bs = document.getElementById("boss");
+	//dd
+	var gndlev = 508;
+	var Og = false;
+	var username = "/";
+
+	// input
+	var right = false;
+	var left = false;
+
+
+	//tut
+	var State = "Tutorial";
+
+	function Show() {
+		var x = document.getElementById("canvHolder");
+		var y = document.getElementById("form");
+
+		username = document.getElementById("naam").value;
+
+		x.style.display = "block";
+		y.style.display = "none";
+	}
+
+
+
+	class Toad{
+
+		constructor(x,y){
+			this.x = x;
+			this.y = y;
+			this.vx = -3;
+			this.state = 0;
+			this.last = null;
+			this.showtxt = false;
+		}
+
+
+		draw(ctx){
+			ctx.drawImage(td, this.x, this.y, 70, 120);
+			if(this.showtxt){
+				ctx.fillStyle = "white";
+				ctx.font = "30px Arial";
+				ctx.fillText("Spring op 15 tegenstanders", 300, 300);
+			}
+		}
+
+		update(){
+
+			if(this.x > 400 && this.state == 0){
+				this.x += this.vx;
+			}else{
+
+				if(this.state == 0){
+					this.showtxt = true;
+					if(this.last == null){
+						this.last = performance.now();
+					}else if(performance.now() >= this.last + 5000){
+
+						this.showtxt = false;
+						this.state = 1;
+					}
+				}else if(this.state == 1){
+					if(this.x < 850){
+						this.x -= this.vx;
+					}else{
+						State = "Game";
+					}
+				}
+
+
+
+
+			}
+
+		}
+
+	}
+
+
+
+	class Speler{
+
+		constructor(x,y){
+			this.x = x;
+			this.y = y;
+			this.vx = 0;
+			this.vy = 0;
+			this.score = 0;
+		}
+
+		draw(ctx){
+
+			if(this.score < 15){
+				ctx.fillStyle = "black";
+				ctx.font = "20px Arial";
+				ctx.fillText(this.score+ " / 15", 0, 25);
+			}
+
+			ctx.fillStyle = "black";
+			ctx.font = "20px Arial";
+			ctx.fillText(username, this.x, this.y-20);
+			ctx.drawImage(mr, this.x, this.y, 40, 65);
+		}
+
+		update(handler){
+
+			if(!(this.score < 15)){
+				State = "Boss";
+				for(var i=0;i<handler.Enemies.length;i++){
+					handler.Enemies[i] = null;
+				}
+			}
+
+			if(right && left){
+				this.vx = 0;
+			}else if(right){
+				this.vx = 5;
+			}else if(left){
+				this.vx = -5;
+			}else{
+				this.vx = 0;
+			}
+
+
+
+			if(this.vy > 15){
+				this.vy = 15;
+			}else{
+				this.vy += 0.5;
+			}
+
+
+			for(var i=0;i<handler.Enemies.length;i++){
+				this.temp = handler.Enemies[i];
+				if(this.temp != null){
+
+					if(this.x + 40 > this.temp.x && this.x < this.temp.x+45 &&this.y + 65<this.temp.y && this.y + 65 + this.vy > this.temp.y){
+
+							handler.RemE(this.temp.id);
+							this.score++;
+							this.vy = -5;
+
+					}else if(this.x + 40 > this.temp.x && this.x < this.temp.x+45 &&this.y + 65 > this.temp.y && this.y < this.temp.y + 45){
+							dead();
+					}
+
+
+
+				}
+
+
+
+			}
+
+
+			this.x += this.vx;
+
+			if(this.y + 65 + this.vy> gndlev){
+				Og = true;
+				this.y = gndlev-65;
+				this.vy = 0;
+			}else{
+				Og = false;
+				this.y += this.vy;
+			}
+
+
+		}
+
+	}
+
+	class Enemy{
+
+		constructor(x,y){
+			this.x = x;
+			this.y = y;
+			this.vx = 0;
+			this.vy = 0;
+			this.id = 0;
+		}
+
+		draw(ctx){
+
+			ctx.drawImage(en, this.x, this.y, 45, 45);
+		}
+
+		update(speler){
+
+			this.dx = speler.x - this.x;
+
+
+
+
+			if(this.dx > -30 && this.dx < 30){
+				this.vx = 0;
+			}
+			else if(this.dx > 0){
+				this.vx = 1;
+			}else{
+				this.vx = -1;
+			}
+
+			this.x += this.vx;
+
+		}
+
+	}
+
+	class Boss{
+
+		constructor(x, y){
+			this.x = x;
+			this.y = y;
+			this.vx = 0;
+
+			this.levens = 3;
+		}
+
+		draw(ctx){
+			ctx.drawImage(bs, this.x, this.y, 200, 200);
+		}
+
+		update(){
+
+			if(this.y < gndlev-200){
+				this.y += 3;
+			}else if(this.vx == 0){
+				this.y = gndlev-200;
+				this.vx = 1;
+			}
+
+			if(this.x <=  0 || this.x >= 600){
+				this.vx *=-1;
+			}
+
+			this.x += this.vx;
+		}
+
+	}
+
+	class Handler{
+
+		constructor(){
+			this.Enemies = [];
+		}
+
+		update(speler){
+
+			for(var i=0;i<this.Enemies.length;i++){
+
+
+				if(this.Enemies[i] != null){
+					this.Enemies[i].update(speler);
+				}
+
+
+			}
+
+		}
+
+		draw(ctx){
+			for(var i=0;i<this.Enemies.length;i++){
+					if(this.Enemies[i] != null){
+						this.Enemies[i].draw(ctx);
+					}
+
+				}
+		}
+
+		addE(enemy){
+			for(var i=0;i<this.Enemies.length;i++){
+
+				if(this.Enemies[i] == null){
+					enemy.id = i;
+					this.Enemies[i] = enemy;
+					return;
+				}
+
+			}
+			enemy.id = this.Enemies.length;
+			this.Enemies.push(enemy);
+		}
+
+
+		RemE(id){
+			for(var i=0;i<this.Enemies.length;i++){
+
+				if(this.Enemies[i] != null && this.Enemies[i].id == id){
+					this.Enemies[i] = null;
+					return;
+				}
+
+			}
+
+		}
+
+	}
+
+
+
+	var c = document.getElementById("canv");
+	var ctx = c.getContext("2d");
+	var vorigeKeer = 0;
+	var pauze = 3000;
+
+
+
+
+	speler = new Speler(400,200);
+	toad = new Toad(1500, gndlev-120);
+	boss = new Boss(400, -1000);
+	//e1 = new Enemy(0, gndlev - 45);
+	handler = new Handler();
+
+
+	loop();
+	function loop(){
+		window.requestAnimationFrame(loop);
+		if(username != "/"){
+			//ctx.drawImage(imageObj, 0, 0, 100, 100 * imageObj.height / imageObj.width)
+			ctx.drawImage(bg, 0, 0, 800, 600);
+
+			speler.draw(ctx);
+			speler.update(handler);
+
+			switch(State){
+
+				case "Tutorial":
+					toad.draw(ctx);
+					toad.update();
+					break;
+				case "Game":
+					handler.draw(ctx);
+					handler.update(speler);
+					if(performance.now() > vorigeKeer + pauze){
+						vorigeKeer= performance.now();
+						pauze -= 500;
+						if(Math.random() >= 0.5){
+							handler.addE(new Enemy(-50, gndlev - 45));
+						}else{
+							handler.addE(new Enemy(850, gndlev - 45));
+						}
+
+					}
+					break;
+				case "Boss":
+					ctx.fillStyle = "white";
+					ctx.font = "25px Arial";
+					ctx.fillText("*Boss Music*", 200, 100);
+					boss.draw(ctx);
+					boss.update();
+					break;
+			}
+
+
+		}
+
+
+	}
+
+
+	document.addEventListener('keydown', (e) => {
+		if (e.code == "ArrowUp" && Og){
+
+			speler.vy = -10;
+		}
+		if (e.code == "ArrowRight"){
+			right = true;
+
+		}
+		if (e.code == "ArrowLeft"){
+			left = true;
+
+		}
+
+	});
+
+	document.addEventListener('keyup', (e) => {
+
+		if (e.code == "ArrowRight"){
+			right = false;
+
+		}
+		else if (e.code == "ArrowLeft"){
+			left = false;
+		}
+
+	});
+
+</script>
